@@ -1,5 +1,5 @@
 pragma solidity ^0.4.6;
-import "browser/Campaign.sol";
+import "./Campaign.sol";
 
 contract Hub is Stoppable{
     
@@ -7,11 +7,14 @@ contract Hub is Stoppable{
     mapping(address=>bool) campaignExists;
     
     modifier onlyIfCampaign(address campaign){
-        if(!campaignExists[campaign]) throw;
+        require(campaignExists[campaign]);
         _;
     }
     
-    event LogNewCampaign(address campaign, uint duration, uint goal);
+    event LogNewCampaign(address sponsor,address campaign, uint duration, uint goal);
+    event LogCampaignStopped(address sender, address campaign);
+    event LogCampaignStarted(address sender, address campaign);
+    event LogCampaignNewOwner(address sender, address campaign, address newOwner);
 
     function Hub(){
         
@@ -24,7 +27,7 @@ contract Hub is Stoppable{
        Campaign trustedCampaign = new Campaign(msg.sender,campaignDuration,campaignGoal);
        campaigns.push(trustedCampaign);
        campaignExists[trustedCampaign]=true;
-       LogNewCampaign(trustedCampaign,campaignDuration,campaignGoal);
+       LogNewCampaign(msg.sender,trustedCampaign,campaignDuration,campaignGoal);
        return trustedCampaign;
     }
     
@@ -41,6 +44,7 @@ contract Hub is Stoppable{
     onlyIfCampaign(campaign) 
     returns(bool success){
         Campaign trustedCampaign=Campaign(campaign);
+        LogCampaignStopped(msg.sender, campaign);
         return trustedCampaign.runSwitch(false);
     }
     
@@ -49,6 +53,7 @@ contract Hub is Stoppable{
     onlyIfCampaign(campaign) 
     returns(bool success){
         Campaign trustedCampaign=Campaign(campaign);
+        LogCampaignStarted(msg.sender, campaign);
         return trustedCampaign.runSwitch(true);
     }
     
@@ -57,6 +62,7 @@ contract Hub is Stoppable{
     onlyIfCampaign(campaign) 
     returns(bool success){
         Campaign trustedCampaign=Campaign(campaign);
+        LogCampaignNewOwner(msg.sender,campaign,newOwner);
         return trustedCampaign.changeOwner(newOwner);
     }
 }

@@ -1,24 +1,23 @@
 pragma solidity ^0.4.6;
 
-import "browser/Owned.sol";
+import "./Owned.sol";
 
 contract Stoppable is Owned{
     
     bool public running;
     
-    modifier requireRunning{ if(!running) throw;_;}
+    modifier requireRunning{ require(running);_;}
     
-    event LogRunningChange(bool runningState);
+    event LogRunningChange(address sender,bool runningState);
     
     function Stoppable(){
         running=true;
     }
     
     function runSwitch(bool state) public requireOwner returns(bool){
-        LogRunningChange(state);
+        LogRunningChange(msg.sender,state);
         running=state;
         return true;
     }
 }
-
 

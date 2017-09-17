@@ -1,7 +1,5 @@
-//Contract Factory Practice
-
 pragma solidity ^0.4.6;
-import "browser/Stoppable.sol";
+import "./Stoppable.sol";
 
 
 contract Campaign is Stoppable{
@@ -21,7 +19,7 @@ contract Campaign is Stoppable{
         uint amountRefunded;
     }
     
-    modifier requireSponsor{if(msg.sender!=sponsor) throw;_;}
+    modifier requireSponsor{require(msg.sender==sponsor);_;}
 
     
     //Events
@@ -55,12 +53,12 @@ contract Campaign is Stoppable{
     Returns boolean
     */
     function contribute() public payable requireRunning returns(bool success){
-        if(msg.value==0) throw;
+        require(msg.value!=0);
         //checking for deadline
-        if(block.number>deadline) throw;
+        require(block.number<deadline);
         //stop accepting after success or fail
-        if(isSuccess()||hasFailed()) throw;
-        if((fundsRaised+msg.value)<fundsRaised) throw;
+        require(!isSuccess()||!hasFailed());
+        require((fundsRaised+msg.value)>fundsRaised);
         fundsRaised+=msg.value;
         funderStructs[msg.sender].amount+=msg.value;
         LogContribution(msg.sender,msg.value);
@@ -73,11 +71,11 @@ contract Campaign is Stoppable{
     */
     function withdrawFunds() requireSponsor requireRunning returns(bool success) {
         //check campaign deadline
-        if(!isSuccess()) throw;
+        require(isSuccess());
         uint _amount=this.balance;
-        if((owner.balance+_amount)<owner.balance) throw;
+        require((owner.balance+_amount)>owner.balance);
         if(!owner.send(_amount)){
-            throw;
+            revert();
         }
         LogWithdrawal(owner,this.balance);
         success=true;
@@ -85,15 +83,11 @@ contract Campaign is Stoppable{
     
     function requestRefund() public requireRunning returns(bool){
         uint amountOwed = funderStructs[msg.sender].amount-funderStructs[msg.sender].amountRefunded;
-        if(amountOwed==0) throw;
-        if(!hasFailed()) throw;
+        require(amountOwed!=0);
+        require(hasFailed());
         funderStructs[msg.sender].amountRefunded+=amountOwed;
-        if(!msg.sender.send(amountOwed)) throw;
+        if(!msg.sender.send(amountOwed)) revert();
         LogRefundSent(msg.sender,funderStructs[msg.sender].amount);
         return true;
     }
-    
-  
-    
 }
-

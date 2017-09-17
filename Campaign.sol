@@ -5,6 +5,7 @@ import "browser/Stoppable.sol";
 
 
 contract Campaign is Stoppable{
+    address public sponsor;
     //Block number is used to track
     uint public deadline;
     
@@ -20,6 +21,9 @@ contract Campaign is Stoppable{
         uint amountRefunded;
     }
     
+    modifier requireSponsor{if(msg.sender!=sponsor) throw;_;}
+
+    
     //Events
     event LogContribution(address sender,uint amount);
     event LogRefund(address funder,uint amount);
@@ -29,9 +33,10 @@ contract Campaign is Stoppable{
     mapping (address=>FunderStruct) public funderStructs;
 
     //constructor
-    function Campgain(uint campaignDuration,uint campaginGoal){
-      deadline=block.number+campaignDuration;
-      goal=campaginGoal;
+    function Campaign(address campaignSponsor,uint campaignDuration,uint campaginGoal){
+        sponsor=campaignSponsor;
+        deadline=block.number+campaignDuration;
+        goal=campaginGoal;
     }
     
      /*Check whether campaign was successful
@@ -66,7 +71,7 @@ contract Campaign is Stoppable{
     Function for owner to withdraw funds
     Returns boolean
     */
-    function withdrawFunds() requireOwner requireRunning returns(bool success) {
+    function withdrawFunds() requireSponsor requireRunning returns(bool success) {
         //check campaign deadline
         if(!isSuccess()) throw;
         uint _amount=this.balance;
